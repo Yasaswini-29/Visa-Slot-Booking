@@ -1,0 +1,36 @@
+trigger AvoidDuplicatePassports on Passport__c (before insert, before update) {
+    Set<String> fullNameSet = new Set<String>();
+    Set<Decimal> contactNumberSet = new Set<Decimal>();
+    Map<String, Passport__c> fullNameMap = new Map<String, Passport__c>();
+    Map<Decimal, Passport__c> contactNumberMap = new Map<Decimal, Passport__c>();
+   
+    // Collect full names and contact numbers from the trigger records
+    for (Passport__c passport : Trigger.new) {
+        if (passport.Full_Name__c != null) {
+            fullNameSet.add(passport.Full_Name__c);
+        }
+        if (passport.Contact_Number__c != null) {
+            contactNumberSet.add(passport.Contact_Number__c);
+        }
+    }
+   
+    // Query existing records with the same full names and contact numbers
+    for (Passport__c existingPassport : [SELECT Id, Full_Name__c, Contact_Number__c FROM Passport__c WHERE Full_Name__c IN :fullNameSet OR Contact_Number__c IN :contactNumberSet]) {
+        if (existingPassport.Full_Name__c != null) {
+            fullNameMap.put(existingPassport.Full_Name__c, existingPassport);
+        }
+        if (existingPassport.Contact_Number__c != null) {
+            contactNumberMap.put(existingPassport.Contact_Number__c, existingPassport);
+        }
+       
+        // Check for duplicates and add errors if found
+        for (Passport__c passport : Trigger.new) {
+            if (passport.Full_Name__c != null && fullNameMap.containsKey(passport.Full_Name__c)) {
+                passport.addError('A Passport record with the same Full Name already exists.');
+            }
+            if (passport.Contact_Number__c != null && contactNumberMap.containsKey(passport.Contact_Number__c)) {
+                passport.addError('A Passport record with the same Contact Number already exists.');
+            }
+        }
+    }
+}
