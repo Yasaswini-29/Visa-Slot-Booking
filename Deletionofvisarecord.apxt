@@ -1,0 +1,10 @@
+trigger Deletionifvisarecord on Visa_Slot__c (before delete) {
+List<Visa_Slot__c> ApprovedVisa = [SELECT Id, Status__c FROM Visa_Slot__c WHERE Id IN :Trigger.old AND Status__c = 'Approved'];
+    for (Visa_Slot__c Visa : trigger.old) {
+        system.debug('trigger.new = '+ Visa);
+        if(Visa.status__c == 'Approved'){
+            system.debug('I am in');
+Visa.status__c.addError('Cannot delete an active Visa.');  
+        }
+    }
+}
